@@ -1,2 +1,394 @@
-local Players = game:GetService("Players") local LocalPlayer = Players.LocalPlayer local HttpService = game:GetService("HttpService") if not LocalPlayer then print("Abortado: script precisa rodar como LocalScript (LocalPlayer inválido).") return end local TweenService = game:GetService("TweenService") local RunService = game:GetService("RunService") local Players = game:GetService("Players") local CoreGui = game:GetService("CoreGui") local Player = Players.LocalPlayer local PlayerGui = Player:WaitForChild("PlayerGui") local LoadingConfig = { Duration = 8, FadeOutTime = 1.5, BarColor = Color3.fromRGB(200, 0, 255), BarGlow = Color3.fromRGB(255, 100, 255), BackgroundColor = Color3.fromRGB(10, 0, 20), TextColor = Color3.fromRGB(255, 200, 255), ParticleCount = 150, ParticleSpeed = 2, ParticleSize = 3 } local LoadingElements = {("Made by Why Developments Team"), } local Particles = {} local AnimationConnections = {} local function CreateStarParticle(parent, x, y) local star = Instance.new("Frame") star.Name = "StarParticle" star.Parent = parent star.BackgroundColor3 = Color3.fromRGB(255, 255, 255) star.BorderSizePixel = 0 star.Size = UDim2.new(0, math.random(2, LoadingConfig.ParticleSize), 0, math.random(2, LoadingConfig.ParticleSize)) star.Position = UDim2.new(0, x, 0, y) star.ZIndex = 8 star.BackgroundTransparency = math.random(0, 50) / 100 local corner = Instance.new("UICorner") corner.CornerRadius = UDim.new(1, 0) corner.Parent = star local gradient = Instance.new("UIGradient") gradient.Parent = star gradient.Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, Color3.fromRGB(255, 255, 255)), ColorSequenceKeypoint.new(0.5, Color3.fromRGB(147, 51, 234)), ColorSequenceKeypoint.new(1, Color3.fromRGB(255, 255, 255)) }) local particle = { frame = star, speedX = (math.random(-100, 100) / 100) * LoadingConfig.ParticleSpeed, speedY = (math.random(-100, 100) / 100) * LoadingConfig.ParticleSpeed, rotationSpeed = math.random(-5, 5), pulseSpeed = math.random(1, 3), opacity = math.random(30, 100) / 100 } return particle end local function CreateParticleSystem(parent) local screenSize = workspace.CurrentCamera.ViewportSize for i = 1, LoadingConfig.ParticleCount do local x = math.random(0, screenSize.X) local y = math.random(0, screenSize.Y) local particle = CreateStarParticle(parent, x, y) table.insert(Particles, particle) end end local RectangleParticles = {} local function CreateRectangleParticle(parent, x) local rect = Instance.new("Frame") rect.Name = "RectangleParticle" rect.Parent = parent rect.Size = UDim2.new(0, math.random(8, 25), 0, math.random(15, 50)) rect.Position = UDim2.new(0, x, 0, -50) rect.BackgroundColor3 = Color3.fromRGB(200, 0, 255) rect.BorderSizePixel = 0 rect.ZIndex = 8 rect.BackgroundTransparency = math.random(20, 60) / 100 local corner = Instance.new("UICorner") corner.CornerRadius = UDim.new(0, math.random(2, 8)) corner.Parent = rect local gradient = Instance.new("UIGradient") gradient.Parent = rect gradient.Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, Color3.fromRGB(200, 0, 255)), ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 100, 255)), ColorSequenceKeypoint.new(1, Color3.fromRGB(147, 51, 234)) }) gradient.Rotation = math.random(0, 360) local particle = { frame = rect, speedY = math.random(3, 8), rotationSpeed = math.random(-2, 2), } return particle end local function CreateRectangleSystem(parent) local screenSize = workspace.CurrentCamera.ViewportSize local spacing = 40 local columns = math.ceil(screenSize.X / spacing) for i = 1, columns do local x = (i - 1) * spacing + math.random(-15, 15) for j = 1, math.random(8, 15) do local delayedSpawn = math.random(0, 300) / 100 task.delay(delayedSpawn * 0.01, function() local particle = CreateRectangleParticle(parent, x) table.insert(RectangleParticles, particle) end) end end end local function UpdateRectangles() local screenSize = workspace.CurrentCamera.ViewportSize for i, particle in pairs(RectangleParticles) do if particle.frame and particle.frame.Parent then local newY = particle.frame.Position.Y.Offset + particle.speedY particle.frame.Rotation = particle.frame.Rotation + particle.rotationSpeed local pulseValue = math.sin(tick() * 2 + i) * 0.2 + 0.5 particle.frame.BackgroundTransparency = math.min(0.9, particle.frame.BackgroundTransparency + pulseValue * 0.1) if newY > screenSize.Y + 100 then newY = -50 local newX = math.random(0, screenSize.X) particle.frame.Position = UDim2.new(0, newX, 0, newY) else particle.frame.Position = UDim2.new(0, particle.frame.Position.X.Offset, 0, newY) end end end end local function UpdateParticles(parentFrame) local screenSize = workspace.CurrentCamera.ViewportSize for _, particle in pairs(Particles) do if particle.frame and particle.frame.Parent then local currentPos = particle.frame.Position local newX = currentPos.X.Offset + particle.speedX local newY = currentPos.Y.Offset + particle.speedY if newX < -10 then newX = screenSize.X + 10 elseif newX > screenSize.X + 10 then newX = -10 end if newY < -10 then newY = screenSize.Y + 10 elseif newY > screenSize.Y + 10 then newY = -10 end particle.frame.Position = UDim2.new(0, newX, 0, newY) particle.frame.Rotation = particle.frame.Rotation + particle.rotationSpeed local pulseValue = math.sin(tick() * particle.pulseSpeed * 2) * 0.4 + 0.6 particle.frame.BackgroundTransparency = 1 - (particle.opacity * pulseValue) local sizeMultiplier = 1 + (math.sin(tick() * particle.pulseSpeed * 0.5) * 0.2) particle.frame.Size = UDim2.new(0, LoadingConfig.ParticleSize * sizeMultiplier, 0, LoadingConfig.ParticleSize * sizeMultiplier) end end end local function CreateAdvancedBackground(parent) local bgFrame = Instance.new("Frame") bgFrame.Name = "AdvancedBackground" bgFrame.Parent = parent bgFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0) bgFrame.BorderSizePixel = 0 bgFrame.Size = UDim2.new(1, 0, 1, 0) bgFrame.Position = UDim2.new(0, 0, 0, 0) bgFrame.ZIndex = 1 local gradient1 = Instance.new("UIGradient") gradient1.Parent = bgFrame gradient1.Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, Color3.fromRGB(5, 5, 20)), ColorSequenceKeypoint.new(0.3, Color3.fromRGB(0, 0, 0)), ColorSequenceKeypoint.new(0.7, Color3.fromRGB(10, 0, 15)), ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 0, 0)) }) gradient1.Rotation = 45 local animateGradient = TweenService:Create( gradient1, TweenInfo.new(4, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {Rotation = 225} ) animateGradient:Play() table.insert(AnimationConnections, animateGradient) local overlay = Instance.new("Frame") overlay.Name = "Overlay" overlay.Parent = bgFrame overlay.BackgroundColor3 = Color3.fromRGB(0, 0, 0) overlay.BorderSizePixel = 0 overlay.Size = UDim2.new(1, 0, 1, 0) overlay.Position = UDim2.new(0, 0, 0, 0) overlay.ZIndex = 2 overlay.BackgroundTransparency = 0.3 local overlayGradient = Instance.new("UIGradient") overlayGradient.Parent = overlay overlayGradient.Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, Color3.fromRGB(20, 0, 30)), ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 0, 0)), ColorSequenceKeypoint.new(1, Color3.fromRGB(30, 0, 20)) }) overlayGradient.Rotation = -45 local animateOverlay = TweenService:Create( overlayGradient, TweenInfo.new(6, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {Rotation = 315} ) animateOverlay:Play() table.insert(AnimationConnections, animateOverlay) return bgFrame end local function CreatePulsingCircles(parent) for i = 1, 5 do local circle = Instance.new("Frame") circle.Name = "PulsingCircle" i circle.Parent = parent circle.BackgroundColor3 = Color3.fromRGB(0, 0, 0) circle.BorderSizePixel = 0 circle.Size = UDim2.new(0, 100 + (i * 50), 0, 100 + (i * 50)) circle.Position = UDim2.new(0.5, -(50 + (i * 25)), 0.5, -(50 + (i * 25))) circle.ZIndex = 3 circle.BackgroundTransparency = 0.8 + (i * 0.03) local corner = Instance.new("UICorner") corner.CornerRadius = UDim.new(1, 0) corner.Parent = circle local pulseTween = TweenService:Create( circle, TweenInfo.new(2 + (i * 0.3), Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), { Size = UDim2.new(0, 120 + (i * 60), 0, 120 + (i * 60)), Position = UDim2.new(0.5, -(60 + (i * 30)), 0.5, -(60 + (i * 30))), BackgroundTransparency = 0.95 } ) pulseTween:Play() table.insert(AnimationConnections, pulseTween) end end local function CreateLoadingScreen() local ScreenGui = Instance.new("ScreenGui") ScreenGui.Name = "PremiumLoadingScreen" ScreenGui.Parent = PlayerGui ScreenGui.ResetOnSpawn = false ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling ScreenGui.ScreenInsets = Enum.ScreenInsets.None ScreenGui.IgnoreGuiInset = true local MainFrame = Instance.new("Frame") MainFrame.Name = "MainFrame" MainFrame.Parent = ScreenGui MainFrame.BackgroundColor3 = LoadingConfig.BackgroundColor MainFrame.BorderSizePixel = 0 MainFrame.Size = UDim2.new(1, 0, 1, 0) MainFrame.Position = UDim2.new(0, 0, 0, 0) MainFrame.ZIndex = 10 local advancedBg = CreateAdvancedBackground(MainFrame) CreatePulsingCircles(MainFrame) CreateParticleSystem(MainFrame) CreateRectangleSystem(MainFrame) local CenterContainer = Instance.new("Frame") CenterContainer.Name = "CenterContainer" CenterContainer.Parent = MainFrame CenterContainer.BackgroundTransparency = 1 CenterContainer.Size = UDim2.new(0, 600, 0, 400) CenterContainer.Position = UDim2.new(0.5, -300, 0.5, -100) CenterContainer.ZIndex = 11 local Icon = Instance.new("ImageLabel") Icon.Name = "Icon" Icon.Parent = CenterContainer Icon.BackgroundTransparency = 1 Icon.Size = UDim2.new(0, 80, 0, 80) Icon.Position = UDim2.new(0.5, -40, 0, -40) Icon.Image = "rbxassetid://13458212275" Icon.ZIndex = 13 local iconRotation = TweenService:Create( Icon, TweenInfo.new(4, Enum.EasingStyle.Linear, Enum.EasingDirection.InOut, -1), {Rotation = 360} ) iconRotation:Play() table.insert(AnimationConnections, iconRotation) local iconPulse = TweenService:Create( Icon, TweenInfo.new(2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), { Size = UDim2.new(0, 90, 0, 90), Position = UDim2.new(0.5, -45, 0, -45) } ) iconPulse:Play() table.insert(AnimationConnections, iconPulse) local uiStroke = Instance.new("UIStroke") uiStroke.Parent = Icon uiStroke.Color = Color3.fromRGB(200, 0, 255) uiStroke.Thickness = 3 uiStroke.Transparency = 0.3 local strokeGlow = TweenService:Create( uiStroke, TweenInfo.new(1.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {Transparency = 0.1, Thickness = 5} ) strokeGlow:Play() table.insert(AnimationConnections, strokeGlow) local TitleLabel = Instance.new("TextLabel") TitleLabel.Name = "TitleLabel" TitleLabel.Parent = CenterContainer TitleLabel.BackgroundTransparency = 1 TitleLabel.Size = UDim2.new(1, 0, 0, 80) TitleLabel.Position = UDim2.new(0, 0, 0, 50) TitleLabel.Text = "Nytherune Hub is Loading..." TitleLabel.TextColor3 = LoadingConfig.TextColor TitleLabel.TextScaled = true TitleLabel.Font = Enum.Font.GothamBold TitleLabel.ZIndex = 12 local titleStroke = Instance.new("UIStroke") titleStroke.Parent = TitleLabel titleStroke.Color = Color3.fromRGB(147, 51, 234) titleStroke.Thickness = 2 titleStroke.Transparency = 0.5 local TitleGradient = Instance.new("UIGradient") TitleGradient.Parent = TitleLabel TitleGradient.Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, Color3.fromRGB(147, 51, 234)), ColorSequenceKeypoint.new(0.5, Color3.fromRGB(255, 255, 255)), ColorSequenceKeypoint.new(1, Color3.fromRGB(147, 51, 234)) }) local titleAnimation = TweenService:Create( TitleGradient, TweenInfo.new(3, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {Offset = Vector2.new(2, 0)} ) titleAnimation:Play() table.insert(AnimationConnections, titleAnimation) local glowTween = TweenService:Create( titleStroke, TweenInfo.new(2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {Transparency = 0.1} ) glowTween:Play() table.insert(AnimationConnections, glowTween) local SubtitleLabel = Instance.new("TextLabel") SubtitleLabel.Name = "SubtitleLabel" SubtitleLabel.Parent = MainFrame SubtitleLabel.BackgroundTransparency = 1 SubtitleLabel.Size = UDim2.new(0, 400, 0, 40) SubtitleLabel.Position = UDim2.new(0.5, -600, 1, -50) SubtitleLabel.Text = "dsc.gg/nytherune" SubtitleLabel.TextColor3 = Color3.fromRGB(180, 180, 180) SubtitleLabel.TextScaled = false SubtitleLabel.TextSize = 12 SubtitleLabel.Font = Enum.Font.Gotham SubtitleLabel.ZIndex = 12 SubtitleLabel.TextXAlignment = Enum.TextXAlignment.Center SubtitleLabel.TextYAlignment = Enum.TextYAlignment.Bottom local ProgressContainer = Instance.new("Frame") ProgressContainer.Name = "ProgressContainer" ProgressContainer.Parent = CenterContainer ProgressContainer.BackgroundColor3 = Color3.fromRGB(20, 20, 20) ProgressContainer.BorderSizePixel = 0 ProgressContainer.Size = UDim2.new(1, 0, 0, 25) ProgressContainer.Position = UDim2.new(0, 0, 0, 160) ProgressContainer.ZIndex = 12 local ProgressCorner = Instance.new("UICorner") ProgressCorner.CornerRadius = UDim.new(0, 12) ProgressCorner.Parent = ProgressContainer local ProgressStroke = Instance.new("UIStroke") ProgressStroke.Parent = ProgressContainer ProgressStroke.Color = LoadingConfig.BarGlow ProgressStroke.Thickness = 2 ProgressStroke.Transparency = 0.3 local strokePulse = TweenService:Create( ProgressStroke, TweenInfo.new(1.5, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {Transparency = 0.1} ) strokePulse:Play() table.insert(AnimationConnections, strokePulse) local ProgressBar = Instance.new("Frame") ProgressBar.Name = "ProgressBar" ProgressBar.Parent = ProgressContainer ProgressBar.BackgroundColor3 = LoadingConfig.BarColor ProgressBar.BorderSizePixel = 0 ProgressBar.Size = UDim2.new(0, 0, 1, 0) ProgressBar.Position = UDim2.new(0, 0, 0, 0) ProgressBar.ZIndex = 13 local BarCorner = Instance.new("UICorner") BarCorner.CornerRadius = UDim.new(0, 12) BarCorner.Parent = ProgressBar local BarGradient = Instance.new("UIGradient") BarGradient.Parent = ProgressBar BarGradient.Color = ColorSequence.new({ ColorSequenceKeypoint.new(0, LoadingConfig.BarColor), ColorSequenceKeypoint.new(0.5, LoadingConfig.BarGlow), ColorSequenceKeypoint.new(1, LoadingConfig.BarColor) }) local barGradientAnim = TweenService:Create( BarGradient, TweenInfo.new(2, Enum.EasingStyle.Sine, Enum.EasingDirection.InOut, -1, true), {Offset = Vector2.new(1, 0)} ) barGradientAnim:Play() table.insert(AnimationConnections, barGradientAnim) local PercentageLabel = Instance.new("TextLabel") PercentageLabel.Name = "PercentageLabel" PercentageLabel.Parent = CenterContainer PercentageLabel.BackgroundTransparency = 1 PercentageLabel.Size = UDim2.new(1, 0, 0, 40) PercentageLabel.Position = UDim2.new(0, 0, 0, 200) PercentageLabel.Text = "0%" PercentageLabel.TextColor3 = LoadingConfig.BarColor PercentageLabel.TextScaled = true PercentageLabel.Font = Enum.Font.GothamBold PercentageLabel.ZIndex = 12 local StatusLabel = Instance.new("TextLabel") StatusLabel.Name = "StatusLabel" StatusLabel.Parent = CenterContainer StatusLabel.BackgroundTransparency = 1 StatusLabel.Size = UDim2.new(1, 0, 0, 30) StatusLabel.Position = UDim2.new(0, 0, 0, 250) StatusLabel.Text = "Made by Why Developments Team (Loading...)" StatusLabel.TextColor3 = Color3.fromRGB(150, 150, 150) StatusLabel.TextScaled = true StatusLabel.Font = Enum.Font.Gotham StatusLabel.ZIndex = 12 local DotsLabel = Instance.new("TextLabel") DotsLabel.Name = "DotsLabel" DotsLabel.Parent = CenterContainer DotsLabel.BackgroundTransparency = 1 DotsLabel.Size = UDim2.new(0, 60, 0, 30) DotsLabel.Position = UDim2.new(1, -60, 0, 250) DotsLabel.Text = "" DotsLabel.TextColor3 = Color3.fromRGB(150, 150, 150) DotsLabel.TextScaled = true DotsLabel.Font = Enum.Font.Gotham DotsLabel.ZIndex = 12 return ScreenGui, ProgressBar, PercentageLabel, StatusLabel, DotsLabel, nil, MainFrame end local function AnimateDots(dotsLabel) local dots = "" local dotCount = 0 spawn(function() while dotsLabel.Parent do dotCount = (dotCount + 1) % 4 dots = string.rep(".", dotCount) dotsLabel.Text = dots wait(0.4) end end) end local function solutionsLoad() local screenGui, progressBar, percentageLabel, statusLabel, dotsLabel, glowEffect, mainFrame = CreateLoadingScreen() AnimateDots(dotsLabel) local particleConnection = RunService.Heartbeat:Connect(function() UpdateParticles(mainFrame) UpdateRectangles() end) table.insert(AnimationConnections, particleConnection) local startTime = tick() local currentElementIndex = 1 local lastElementTime = startTime local function updateProgress() local elapsed = tick() - startTime local progress = math.min(elapsed / LoadingConfig.Duration, 1) local percentage = math.floor(progress * 100) local barTween = TweenService:Create( progressBar, TweenInfo.new(0.2, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {Size = UDim2.new(progress, 0, 1, 0)} ) barTween:Play() local percentTween = TweenService:Create( percentageLabel, TweenInfo.new(0.1, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {TextColor3 = Color3.fromRGB(147 + (percentage * 0.5), 51 + (percentage * 0.8), 234)} ) percentTween:Play() percentageLabel.Text = percentage .. "%" local elementTime = LoadingConfig.Duration / #LoadingElements if tick() - lastElementTime >= elementTime and currentElementIndex <= #LoadingElements then statusLabel.Text = LoadingElements[currentElementIndex] local statusTween = TweenService:Create( statusLabel, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.Out), {TextTransparency = 0} ) statusTween:Play() currentElementIndex = currentElementIndex + 1 lastElementTime = tick() end if progress >= 1 then wait(0.8) for _, connection in pairs(AnimationConnections) do if typeof(connection) == "RBXScriptConnection" then connection:Disconnect() elseif typeof(connection) == "Tween" then connection:Cancel() end end for _, particle in pairs(Particles) do if particle.frame then particle.frame:Destroy() end end local fadeOutTween = TweenService:Create( mainFrame, TweenInfo.new(LoadingConfig.FadeOutTime, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), { BackgroundTransparency = 1, Size = UDim2.new(1.5, 0, 1.5, 0), Position = UDim2.new(-0.25, 0, -0.25, 0) } ) local contentFadeTween = TweenService:Create( mainFrame.CenterContainer, TweenInfo.new(LoadingConfig.FadeOutTime * 0.7, Enum.EasingStyle.Back, Enum.EasingDirection.In), { Size = UDim2.new(0, 0, 0, 0), Position = UDim2.new(0.5, 0, 0.5, 0) } ) fadeOutTween:Play() contentFadeTween:Play() fadeOutTween.Completed:Connect(function() screenGui:Destroy() end) return end RunService.Heartbeat:Wait() updateProgress() end updateProgress() end -- LocalScript (colocar em StarterPlayerScripts) local SoundService = game:GetService("SoundService") local sound = Instance.new("Sound") sound.SoundId = "rbxassetid://9085027122" -- ID pedido sound.Volume = 1 -- 0.0 a 1.0 (ajuste conforme quiser) sound.Looped = false -- true se quiser loop sound.PlaybackSpeed = 1 -- velocidade da reprodução sound.Parent = SoundService -- opcional: destruir o objeto quando terminar (evita acúmulo) sound.Ended:Connect(function() sound:Destroy() end) -- LocalScript -- Executa as duas funções/processos simultaneamente task.spawn(function() solutionsLoad() end) task.spawn(function() sound:Play() end) wait(5) local MarketplaceService = game:GetService("MarketplaceService") -- agr eu vou cagar local noites99 = 7326934954 -- sigma local maconha = 4924922222 -- Checa se é o place do Brookhaven if game.PlaceId == maconha then loadstring(game:HttpGet("https://scriptsbinsauth.vercel.app/api/scripts/61a69984-9e07-44cc-bf9f-b6720fcee96c/raw"))() loadstring(game:HttpGet("https://scriptsbinsauth.vercel.app/api/scripts/0d55a86b-821d-4e5f-b8cf-df9680b18986/raw"))() else if game.GameId == noites99 then print("tá Lgl.") loadstring(game:HttpGet("https://scriptsbinsauth.vercel.app/api/scripts/3130fd4f-0a1c-443a-a30f-7f2c74cdb7a3/raw"))() else game.Players.LocalPlayer:Kick("This game is not supported.") end end# Silva-Hub.-
-Silva hub
+local redzlib = loadstring(game:HttpGet("https://raw.githubusercontent.com/tbao143/Library-ui/refs/heads/main/Redzhubui"))()
+
+local Window = redzlib:MakeWindow({
+    Title = "forsaken Hub v1.0.1",
+    SubTitle = "by silva4M",
+    SaveFolder = "teste"
+})
+
+Window:AddMinimizeButton({
+    Button = { Image = "rbxassetid://0", BackgroundTransparency = 0 },
+    Corner = { CornerRadius = UDim.new(35, 1) },
+})
+
+-- ================= Tabs =================
+local Tab1 = Window:MakeTab({"Credits", "info"})
+local Tab2 = Window:MakeTab({"Fun", "fun"})
+local Tab3 = Window:MakeTab({"Avatar", "shirt"})
+local Tab4 = Window:MakeTab({"House", "Home"})
+local Tab5 = Window:MakeTab({"Car", "Car"})
+local Tab6 = Window:MakeTab({"RGB", "brush"})
+local Tab7 = Window:MakeTab({"Music All", "radio"})    
+local Tab8 = Window:MakeTab({"Music", "music"}) 
+local Tab9 = Window:MakeTab({"Troll", "skull"}) 
+local Tab10 = Window:MakeTab({"Coming soon", "bomb"})
+local Tab11 = Window:MakeTab({"Coming soon", "scroll"})
+local Tab12 = Window:MakeTab({"Coming soon", "map-pin"})
+
+-- ================= Tab 1: Credits =================
+local function detectExecutor()
+    if identifyexecutor then
+        return identifyexecutor()
+    elseif syn then
+        return "Synapse X"
+    elseif KRNL_LOADED then
+        return "KRNL"
+    elseif is_sirhurt_closure then
+        return "SirHurt"
+    elseif pebc_execute then
+        return "ProtoSmasher"
+    elseif getexecutorname then
+        return getexecutorname()
+    else
+        return "Executor Desconhecido"
+    end
+end
+
+local executorName = detectExecutor()
+Tab1:AddParagraph({"Executor", executorName})
+Tab1:AddSection({"[ 🌟 ] forsaken Hub : Script sendo executado."})
+Tab1:AddParagraph({"Criadores", "silva4M\\by silva"})
+
+-- ================= Tab 2: Fun =================
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
+local localPlayer = Players.LocalPlayer
+
+-- ==== Headsit ====
+local selectedPlayerName = nil
+local headsitActive = false
+
+local function headsitOnPlayer(targetPlayer)
+    local character = localPlayer.Character or localPlayer.CharacterAdded:Wait()
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+    if not targetPlayer.Character or not targetPlayer.Character:FindFirstChild("Head") then return false end
+    local targetHead = targetPlayer.Character.Head
+    local localRoot = character:FindFirstChild("HumanoidRootPart")
+    if not localRoot then return false end
+    localRoot.CFrame = targetHead.CFrame * CFrame.new(0, 2.2, 0)
+    for _, v in pairs(localRoot:GetChildren()) do if v:IsA("WeldConstraint") then v:Destroy() end end
+    local weld = Instance.new("WeldConstraint")
+    weld.Part0 = localRoot
+    weld.Part1 = targetHead
+    weld.Parent = localRoot
+    if humanoid then humanoid.Sit = true end
+    return true
+end
+
+local function removeHeadsit()
+    local character = localPlayer.Character or localPlayer.CharacterAdded:Wait()
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+    local localRoot = character:FindFirstChild("HumanoidRootPart")
+    if localRoot then
+        for _, v in pairs(localRoot:GetChildren()) do if v:IsA("WeldConstraint") then v:Destroy() end end
+    end
+    if humanoid then humanoid.Sit = false end
+end
+
+local function findPlayerByPartialName(partial)
+    partial = partial:lower()
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= localPlayer and player.Name:lower():sub(1, #partial) == partial then
+            return player
+        end
+    end
+    return nil
+end
+
+local function notifyPlayerSelected(player)
+    local StarterGui = game:GetService("StarterGui")
+    local content, _ = Players:GetUserThumbnailAsync(player.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size100x100)
+    StarterGui:SetCore("SendNotification", {
+        Title = "Player Selecionado",
+        Text = player.Name .. " foi selecionado!",
+        Icon = content,
+        Duration = 5
+    })
+end
+
+Tab2:AddTextBox({
+    Name = "Nome do Jogador",
+    Description = "Digite parte do nome",
+    PlaceholderText = "ex: lo → Lolyta",
+    Callback = function(Value)
+        local foundPlayer = findPlayerByPartialName(Value)
+        if foundPlayer then
+            selectedPlayerName = foundPlayer.Name
+            notifyPlayerSelected(foundPlayer)
+        else
+            warn("Nenhum jogador encontrado com esse nome.")
+        end
+    end
+})
+
+Tab2:AddButton({
+    Name = "Headsit Toggle",
+    Callback = function()
+        if not selectedPlayerName then return end
+        if not headsitActive then
+            local target = Players:FindFirstChild(selectedPlayerName)
+            if target and headsitOnPlayer(target) then headsitActive = true end
+        else
+            removeHeadsit()
+            headsitActive = false
+        end
+    end
+})
+
+-- ==== Speed / Jump / Gravity / Infinite Jump ====
+Tab2:AddSlider({
+    Name = "Speed Player",
+    Increase = 1,
+    MinValue = 16,
+    MaxValue = 888,
+    Default = 16,
+    Callback = function(Value)
+        local humanoid = localPlayer.Character and localPlayer.Character:FindFirstChildOfClass("Humanoid")
+        if humanoid then humanoid.WalkSpeed = Value end
+    end
+})
+
+Tab2:AddSlider({
+    Name = "Jumppower",
+    Increase = 1,
+    MinValue = 50,
+    MaxValue = 500,
+    Default = 50,
+    Callback = function(Value)
+        local humanoid = localPlayer.Character and localPlayer.Character:FindFirstChildOfClass("Humanoid")
+        if humanoid then humanoid.JumpPower = Value end
+    end
+})
+
+Tab2:AddSlider({
+    Name = "Gravity",
+    Increase = 1,
+    MinValue = 0,
+    MaxValue = 10000,
+    Default = 196.2,
+    Callback = function(Value)
+        game.Workspace.Gravity = Value
+    end
+})
+
+local InfiniteJumpEnabled = false
+game:GetService("UserInputService").JumpRequest:Connect(function()
+    if InfiniteJumpEnabled then
+        local humanoid = localPlayer.Character and localPlayer.Character:FindFirstChildOfClass("Humanoid")
+        if humanoid then humanoid:ChangeState(Enum.HumanoidStateType.Jumping) end
+    end
+end)
+
+Tab2:AddToggle({
+    Name = "Infinite Jump",
+    Default = false,
+    Callback = function(Value)
+        InfiniteJumpEnabled = Value
+    end
+})
+
+Tab2:AddButton({
+    Name = "Reset Speed/Gravity/Jumppower.✅",
+    Callback = function()
+        local humanoid = localPlayer.Character and localPlayer.Character:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            humanoid.WalkSpeed = 16
+            humanoid.JumpPower = 50
+        end
+        game.Workspace.Gravity = 196.2
+        InfiniteJumpEnabled = false
+    end
+})
+
+-- ==== Ultimate Noclip ====
+local UltimateNoclip = { Enabled = false, Connections = {}, SoccerBalls = {} }
+local function managePlayerCollisions(character)
+    if not character then return end
+    for _, part in ipairs(character:GetDescendants()) do
+        if part:IsA("BasePart") then
+            part.CanCollide = not UltimateNoclip.Enabled
+            part.Anchored = false
+        end
+    end
+end
+
+local function voidProtection(rootPart)
+    if rootPart.Position.Y < -500 then
+        rootPart.CFrame = CFrame.new(0, 100, 0)
+    end
+end
+
+local function manageSoccerBalls()
+    local soccerFolder = Workspace:FindFirstChild("Com", true) and Workspace.Com:FindFirstChild("001_SoccerBalls")
+    if soccerFolder then
+        for _, ball in ipairs(soccerFolder:GetChildren()) do
+            if ball.Name:match("^Soccer") then
+                pcall(function()
+                    ball.CanCollide = not UltimateNoclip.Enabled
+                    ball.Anchored = UltimateNoclip.Enabled
+                end)
+                UltimateNoclip.SoccerBalls[ball] = true
+            end
+        end
+    end
+end
+
+local function mainLoop()
+    UltimateNoclip.Connections.Heartbeat = RunService.Heartbeat:Connect(function()
+        local character = localPlayer.Character
+        if character then
+            managePlayerCollisions(character)
+            local rootPart = character:FindFirstChild("HumanoidRootPart")
+            if rootPart then voidProtection(rootPart) end
+        end
+    end)
+end
+
+Tab2:AddToggle({
+    Name = "Ultimate Noclip",
+    Description = "Noclip + Controle de bolas integrado",
+    Default = false,
+    Callback = function(state)
+        UltimateNoclip.Enabled = state
+        if state then
+            mainLoop()
+            manageSoccerBalls()
+        else
+            for _, conn in pairs(UltimateNoclip.Connections) do if conn.Connected then conn:Disconnect() end end
+            if localPlayer.Character then managePlayerCollisions(localPlayer.Character) end
+        end
+    end
+})
+
+-- ==== Anti-Sit ====
+local antiSitConnection = nil
+local antiSitEnabled = false
+Tab2:AddToggle({
+    Name = "Anti-Sit",
+    Default = false,
+    Callback = function(state)
+        antiSitEnabled = state
+        local function applyAntiSit(character)
+            local humanoid = character:FindFirstChildOfClass("Humanoid")
+            if humanoid then
+                humanoid.Sit = false
+                humanoid:SetStateEnabled(Enum.HumanoidStateType.Seated, not state)
+                if antiSitConnection then antiSitConnection:Disconnect() end
+                antiSitConnection = humanoid.Seated:Connect(function(isSeated)
+                    if isSeated then
+                        humanoid.Sit = false
+                        humanoid:ChangeState(Enum.HumanoidStateType.GettingUp)
+                    end
+                end)
+            end
+        end
+        if localPlayer.Character then applyAntiSit(localPlayer.Character) end
+        localPlayer.CharacterAdded:Connect(function(character) if antiSitEnabled then applyAntiSit(character) end end)
+    end
+})
+
+-- ==== Fly GUI ====
+Tab2:AddButton({
+    Name = "Ativar Fly GUI",
+    Callback = function()
+        local success, _ = pcall(function()
+            loadstring(game:HttpGet("https://rawscripts.net/raw/Universal-Script-Fly-gui-v3-30439"))()
+        end)
+        game.StarterGui:SetCore("SendNotification", {
+            Title = success and "Sucesso" or "Erro",
+            Text = success and "Fly GUI carregado!" or "Falha ao carregar Fly GUI.",
+            Duration = 5
+        })
+    end
+})
+
+-- ==== ESP ====
+local espEnabled = false
+local billboardGuis = {}
+local connections = {}
+local selectedColor = "RGB"
+
+Tab2:AddDropdown({
+    Name = "Cor do ESP",
+    Default = "RGB",
+    Options = { "RGB", "Branco", "Preto", "Vermelho", "Verde", "Azul", "Amarelo", "Rosa", "Roxo" },
+    Callback = function(value) selectedColor = value end
+})
+
+local function getESPColor()
+    if selectedColor == "RGB" then return Color3.fromHSV((tick() % 5)/5,1,1) end
+    local colors = { Preto=Color3.new(0,0,0), Branco=Color3.new(1,1,1), Vermelho=Color3.fromRGB(255,0,0),
+        Verde=Color3.fromRGB(0,255,0), Azul=Color3.fromRGB(0,170,255), Amarelo=Color3.fromRGB(255,255,0),
+        Rosa=Color3.fromRGB(255,105,180), Roxo=Color3.fromRGB(128,0,128) }
+    return colors[selectedColor] or Color3.new(1,1,1)
+end
+
+local function updateESP(player)
+    if player == localPlayer or not espEnabled then return end
+    local character = player.Character
+    if character then
+        local head = character:FindFirstChild("Head")
+        if head then
+            if billboardGuis[player] then billboardGuis[player]:Destroy() end
+            local billboard = Instance.new("BillboardGui")
+            billboard.Name = "ESP_Billboard"
+            billboard.Parent = head
+            billboard.Adornee = head
+            billboard.Size = UDim2.new(0,200,0,50)
+            billboard.StudsOffset = Vector3.new(0,3,0)
+            billboard.AlwaysOnTop = true
+            local textLabel = Instance.new("TextLabel")
+            textLabel.Parent = billboard
+            textLabel.Size = UDim2.new(1,0,1,0)
+            textLabel.BackgroundTransparency = 1
+            textLabel.TextStrokeTransparency = 0.5
+            textLabel.Font = Enum.Font.SourceSansBold
+            textLabel.TextSize = 14
+            textLabel.Text = player.Name.." | "..player.AccountAge.." dias"
+            textLabel.TextColor3 = getESPColor()
+            billboardGuis[player] = billboard
+        end
+    end
+end
+
+local function removeESP(player)
+    if billboardGuis[player] then
+        billboardGuis[player]:Destroy()
+        billboardGuis[player] = nil
+    end
+end
+
+local function disconnectESPConnections()
+    for _, conn in pairs(connections) do if conn.Connected then conn:Disconnect() end end
+    connections = {}
+    for player, gui in pairs(billboardGuis) do removeESP(player) end
+end
+
+local Toggle1 = Tab2:AddToggle({
+    Name = "ESP Ativado",
+    Default = false,
+    Callback = function(value)
+        espEnabled = value
+        if espEnabled then
+            for _, player in pairs(Players:GetPlayers()) do updateESP(player) end
+            local updateConnection = RunService.Heartbeat:Connect(function()
+                for _, player in pairs(Players:GetPlayers()) do updateESP(player) end
+                if selectedColor == "RGB" then
+                    for _, player in pairs(Players:GetPlayers()) do
+                        local gui = billboardGuis[player]
+                        if gui and gui:FindFirstChild("TextLabel") then gui.TextLabel.TextColor3 = getESPColor() end
+                    end
+                end
+            end)
+            table.insert(connections, updateConnection)
+            table.insert(connections, Players.PlayerAdded:Connect(function(player)
+                updateESP(player)
+                table.insert(connections, player.CharacterAdded:Connect(function() updateESP(player) end))
+            end))
+            table.insert(connections, Players.PlayerRemoving:Connect(removeESP))
+        else
+            disconnectESPConnections()
+        end
+    end
+})
